@@ -10,12 +10,19 @@
 #include <unordered_map>
 #include <mutex>
 
+/// <summary>
+/// A macro that defines event handler subscription
+/// </summary>
+///
+/// <param name="func">The function.</param>
+#define SUBSCRIBE(func) std::bind(func, this, std::placeholders::_1, std::placeholders::_2);
+
 namespace IlluminiaStudios::HandyCPP {
 
-    /// <summary>
+/// <summary>
     /// Defines an alias representing the event subscriber signature.
     /// </summary>
-    typedef std::function<void(const void*, EventArgs&)> EventSubscriber;
+    typedef std::function<void(const void*, EventArgs&)> EmptyEventSubscriber;
 
     /// <summary>
     /// Event Handler class definition.
@@ -24,11 +31,19 @@ namespace IlluminiaStudios::HandyCPP {
     /// </summary>
     ///
     /// <typeparam name="T">The Derived Class.</typeparam>
-    template<class T>
+    /// <typeparam name="E">EventArgs Class.</typeparam>
+    template<class T, class E>
     class EventHandlerBase {
 
+        /// <summary>
+        /// Defines an alias representing the event subscriber signature.
+        /// </summary>
+        typedef std::function<void(const void*, E&)> EventSubscriber;
+
     protected:
-        EventHandlerBase() {}
+        EventHandlerBase(){
+            static_assert(std::is_base_of<EventArgs, E>::value, "type parameter of E must derive from EventArgs");
+        }
 
     public:
         virtual ~EventHandlerBase() {}
@@ -65,7 +80,7 @@ namespace IlluminiaStudios::HandyCPP {
         /// </remarks>
         /// <param name="_sender">[in,out] Reference of the send of the event</param>
         /// <param name="_args">[in,out] The arguments.</param>
-        virtual void Invoke(const void* _sender, EventArgs& _args);
+        virtual void Invoke(const void* _sender, E& _args);
 
     private: // Private Members
 
@@ -83,17 +98,17 @@ namespace IlluminiaStudios::HandyCPP {
 
     //Template Definition
 
-    template<class T>
-    T& EventHandlerBase<T>::operator+=(const EventSubscriber& _subscriber) {
+    template<class T, class E>
+    T& EventHandlerBase<T, E>::operator+=(const EventSubscriber& _subscriber) {
 
         std::lock_guard<std::mutex> lock(subscribersMutex);
-        subscribers[(&_subscriber)] = _subscriber;
+        subscribers[&_subscriber] = _subscriber;
 
         return static_cast<T&>(*this);
     }
 
-    template<class T>
-    T& EventHandlerBase<T>::operator-=(const EventSubscriber & _subscriber) {
+    template<class T, class E>
+    T& EventHandlerBase<T, E>::operator-=(const EventSubscriber & _subscriber) {
 
         std::lock_guard<std::mutex> lock(subscribersMutex);
         subscribers.erase(&_subscriber);
@@ -101,8 +116,8 @@ namespace IlluminiaStudios::HandyCPP {
         return  static_cast<T&>(*this);
     }
 
-    template<class T>
-    void EventHandlerBase<T>::Invoke(const void * _sender, EventArgs& _args) {
+    template<class T, class E>
+    void EventHandlerBase<T, E>::Invoke(const void * _sender, E& _args) {
 
         std::lock_guard<std::mutex> lock(subscribersMutex);
 
