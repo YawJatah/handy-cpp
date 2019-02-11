@@ -5,7 +5,6 @@
 
 #include "EventHandlerBase.h"
 
-
 namespace IlluminiaStudios::HandyCPP {
 
     /// <summary>
@@ -15,8 +14,8 @@ namespace IlluminiaStudios::HandyCPP {
     /// </summary>
     /// 
     /// <typeparam name="T">Creating class</typeparam>
-    template<class T>
-    class EventHandler : public EventHandlerBase<EventHandler<T>> {
+    template<class T, class E>
+    class EventHandler : public EventHandlerBase<EventHandler<T, E>, E> {
 
         /// <summary>
         /// Reference to the friend class that created the EventHandler.
@@ -34,14 +33,14 @@ namespace IlluminiaStudios::HandyCPP {
         /// </remarks>
         /// <param name="_sender">[in,out] Reference of the send of the event</param>
         /// <param name="_args">[in,out] The arguments.</param>
-        void Invoke(const void* _sender, EventArgs& _args) override;
+        void Invoke(const void* _sender, E& _args) override;
+
     };
 
     //Template Definition
     
-    template<class T>
-    void EventHandler<T>::Invoke(const void * _sender, EventArgs& _args) {
-        EventHandlerBase<EventHandler<T>>::Invoke(_sender, _args);
+    template<class T, class E>
+    void EventHandler<T, E>::Invoke(const void * _sender, E& _args) {
+        EventHandlerBase<EventHandler<T, E>, E>::Invoke(_sender, _args);
     }
-
 }
